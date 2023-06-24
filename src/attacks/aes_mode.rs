@@ -1,6 +1,6 @@
-use rand::{distributions::Uniform, Rng};
 use crate::aes_128;
-use openssl::symm::{Mode};
+use openssl::symm::Mode;
+use rand::{distributions::Uniform, Rng};
 
 #[derive(Debug, PartialEq)]
 pub enum AESModes {
@@ -12,7 +12,6 @@ fn generate_random_vec(key_size: usize) -> Vec<u8> {
     let mut rng = rand::thread_rng();
     (0..key_size).map(|_| rng.gen::<u8>()).collect::<Vec<u8>>()
 }
-
 
 pub fn encryption_oracle(bytes: Vec<u8>, key_size: usize) -> (Vec<u8>, AESModes) {
     let aes_key = generate_random_vec(key_size);
@@ -32,20 +31,26 @@ pub fn encryption_oracle(bytes: Vec<u8>, key_size: usize) -> (Vec<u8>, AESModes)
     let prob: f64 = rng.gen();
     // mode decision
     if prob > 0.5 {
-        (aes_128::ecb::encrypt(
-            aes_key.as_slice(),
-            padded_bytes.as_slice(),
-            Some(iv.as_slice()),
-            true,
+        (
+            aes_128::ecb::encrypt(
+                aes_key.as_slice(),
+                padded_bytes.as_slice(),
+                Some(iv.as_slice()),
+                true,
+            )
+            .unwrap(),
+            AESModes::ECB,
         )
-        .unwrap(), AESModes::ECB)
     } else {
-        (aes_128::cbc::encrypt(
-            padded_bytes.as_slice(),
-            aes_key.as_slice(),
-            iv.as_slice(),
-            key_size,
-        ), AESModes::CBC)
+        (
+            aes_128::cbc::encrypt(
+                padded_bytes.as_slice(),
+                aes_key.as_slice(),
+                iv.as_slice(),
+                key_size,
+            ),
+            AESModes::CBC,
+        )
     }
 }
 
@@ -53,7 +58,7 @@ pub fn encryption_oracle(bytes: Vec<u8>, key_size: usize) -> (Vec<u8>, AESModes)
 mod tests {
     use super::*;
 
-    #[test]    
+    #[test]
     fn test_generate_random_vec() {
         let key_size = 43;
         let res = generate_random_vec(key_size);
@@ -64,7 +69,5 @@ mod tests {
         let res_massive = generate_random_vec(massive);
         let total = res_massive.iter().map(|x| *x as i32).sum();
         assert!(100_000 < total && total < 200_000);
-
     }
-
 }

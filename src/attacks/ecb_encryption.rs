@@ -1,4 +1,3 @@
-
 // AES-128-ECB(your-string || unknown-string, random-key)
 
 // Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
@@ -34,7 +33,10 @@ use base64::{
     engine::{self, general_purpose},
     Engine as _,
 };
-const RANDOM_KEY: [u8; 16] = [199, 92, 104, 210, 54, 115, 162, 4, 165, 41, 162, 40, 240, 70, 205, 78];
+use itertools::Itertools;
+const RANDOM_KEY: [u8; 16] = [
+    199, 92, 104, 210, 54, 115, 162, 4, 165, 41, 162, 40, 240, 70, 205, 78,
+];
 
 pub fn ecb_encryption_oracle(input: &Vec<u8>) -> Vec<u8> {
     let pad = general_purpose::STANDARD.decode("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK").unwrap();
@@ -42,14 +44,8 @@ pub fn ecb_encryption_oracle(input: &Vec<u8>) -> Vec<u8> {
     let mut padded_bytes = input.clone();
     padded_bytes.extend(pad);
 
-    aes_128::ecb::encrypt(
-        &RANDOM_KEY,
-        padded_bytes.as_slice(),
-        None,
-        true,
-        ).unwrap()
+    aes_128::ecb::encrypt(&RANDOM_KEY, padded_bytes.as_slice(), None, true).unwrap()
 }
-
 
 // 1. Feed identical bytes of your-string to the function 1 at a time --- start with 1 byte ("A"), then "AA", then "AAA" and so on. Discover the block size of the cipher. You know it, but do this step anyway.
 // 2. Detect that the function is using ECB. You already know, but do this step anyways.
@@ -60,71 +56,78 @@ pub fn ecb_encryption_oracle(input: &Vec<u8>) -> Vec<u8> {
 
 #[test]
 pub fn decrypt_ecb() {
-
     let mut input = vec![];
 
     let og_size = ecb_encryption_oracle(&input).len();
     let mut current_size = og_size;
-    // 6
 
     while current_size == og_size {
-        input.push(65);
+        input.push(b'A');
         current_size = ecb_encryption_oracle(&input).len();
     }
     let block_size = current_size - og_size;
-    input = vec![65; block_size-1];
 
     // let mut : Option<Vec<u8>> = None;
+    let mut res: Vec<u8> = vec![];
+    let num_blocks = current_size / block_size;
+
+    for k in 0..num_blocks {
+        let mut unkown_block: Vec<u8> = vec![];
+        for i in 0..block_size {
+            // unkown in block fill in with b'A' i.e. 65
+            let no_unkown = block_size - i - 1;
+
+            let mut input: Vec<u8> = res
+                .iter()
+                .cloned()
+                .chain(vec![b'A'; no_unkown].iter().cloned())
+                .collect();
 
 
-    for i in 0..og_size{
-        let mut ref_input = vec![];
+            let reference_block: Vec<u8> = ecb_encryption_oracle(&input)
+                .iter()
+                .skip(k * block_size)
+                .take(block_size)
+                .cloned()
+                .collect();
 
-        if i >= block_size {
-            ref_input.extend(input.clone());
-        }
-        if i > 0 && i % block_size == 0 {
-            input.extend(vec![65; block_size-1])
-        }
-        let num_blocks = (i / block_size);
-        let current_idx = (block_size - i % block_size) - 1;
-        let actual_idx = block_size * num_blocks  + current_idx;
+            println!(
+                "{i} - reference={reference_block:?} len={}",
+                reference_block.len()
+            );
+            println!("{i} input = {:?} len={}", input, input.len());
 
-        // let mut hashmap: HashMap<u8, Vec<u8>> = HashMap::new();
-        ref_input.extend(vec![65; current_idx]);
+            // use known plaintext to check with reference
+            input.extend(&unkown_block);
 
-        let reference_block: Vec<u8> = ecb_encryption_oracle(&ref_input).iter().skip(num_blocks * block_size).take(block_size).cloned().collect();
+            for j in 0..=255 {
+                input.push(j);
 
-        // println!("{i} - ref_input={ref_input:?} len={}", ref_input.len());
-        println!("{i} - reference={reference_block:?} len={}", reference_block.len());
-        println!("{i} input = {:?} len={}", input, input.len());
+                let cipher_text = ecb_encryption_oracle(&input);
 
-        for j in 0..=255 {
-            input.push(j);
-            let res = ecb_encryption_oracle(&input);
-            let small: Vec<u8> = res.iter().skip(num_blocks * block_size).take(block_size).cloned().collect();
-            // println!("{:?} {:?} {:?}", input, small, res.len());
-            if reference_block == small {
-                println!("{i} - found reference={j} {reference_block:?} {small:?}");
-                if current_idx > 0 {
-                    input.remove(actual_idx - 1);
-                    println!("{input:?} {} {}", actual_idx - 1, input.len())
+                let candidate_block: Vec<u8> = cipher_text
+                    .iter()
+                    .skip(k * block_size)
+                    .take(block_size)
+                    .cloned()
+                    .collect();
+                if candidate_block == reference_block {
+                    // println!("{:?} {:?} {:?}", input, small, res.len());
+                    println!(
+                        "{k} {i} - found reference={j} {reference_block:?} {candidate_block:?}"
+                    );
+                    unkown_block.push(j);
+                    break;
                 }
-                break;
+                input.pop();
             }
-            // hashmap.insert(j, small);
-            input.pop();
         }
-        // println!("input = {:?}", input);
-        if (i == 20) {
+        res.extend(unkown_block);
+        if (k == 2) {
             break;
-
         }
     }
-    println!("input = {:?}", input);
 
-    let decoded_message = std::str::from_utf8(&input).unwrap();
-
+    let decoded_message = std::str::from_utf8(&res).unwrap();
     println!("decoded_message={:?}", decoded_message);
-
 }

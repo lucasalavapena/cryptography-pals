@@ -1,10 +1,10 @@
 mod aes_128;
+mod attacks;
 mod bases;
 mod block;
 mod metrics;
 mod utils;
 mod xor;
-mod attacks;
 
 use itertools::Itertools;
 use std::iter::zip;
@@ -13,12 +13,12 @@ use std::iter::zip;
 mod tests {
 
     use crate::aes_128;
+    use crate::attacks;
     use crate::bases;
     use crate::block;
     use crate::metrics;
     use crate::utils;
     use crate::xor;
-    use crate::attacks;
 
     use base64::{
         engine::{self, general_purpose},
@@ -173,7 +173,6 @@ mod tests {
             .unwrap();
 
         println!("{} {}", idx, score);
-
     }
 
     #[test]
@@ -192,7 +191,10 @@ mod tests {
     #[test]
     fn challenge_11() {
         const BLOCK_SIZE: usize = 16;
-        let bytes = include_str!("data/11.txt").replace("\n", "").as_bytes().to_vec();
+        let bytes = include_str!("data/11.txt")
+            .replace("\n", "")
+            .as_bytes()
+            .to_vec();
 
         let (output, mode) = attacks::aes_mode::encryption_oracle(bytes, BLOCK_SIZE);
 
@@ -203,6 +205,5 @@ mod tests {
         } else {
             assert_eq!(mode, attacks::aes_mode::AESModes::CBC)
         }
-
     }
 }

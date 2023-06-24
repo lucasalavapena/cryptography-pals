@@ -1,9 +1,6 @@
 use std::vec;
 
-
 // Mode::Decrypt
-
-
 
 pub mod ecb {
     use openssl::error::ErrorStack;
@@ -32,13 +29,7 @@ pub mod ecb {
         iv: Option<&[u8]>,
         pad: bool,
     ) -> Result<Vec<u8>, ErrorStack> {
-        ecb_helper(
-            key,
-            ciphertext,
-            Mode::Encrypt,
-            iv,
-            pad,
-        )
+        ecb_helper(key, ciphertext, Mode::Encrypt, iv, pad)
     }
     pub fn decrypt(
         key: &[u8],
@@ -46,13 +37,7 @@ pub mod ecb {
         iv: Option<&[u8]>,
         pad: bool,
     ) -> Result<Vec<u8>, ErrorStack> {
-        ecb_helper(
-            key,
-            ciphertext,
-            Mode::Decrypt,
-            iv,
-            pad,
-        )
+        ecb_helper(key, ciphertext, Mode::Decrypt, iv, pad)
     }
 }
 
