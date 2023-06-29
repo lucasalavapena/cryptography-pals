@@ -2,15 +2,12 @@ use crate::aes_128;
 use openssl::symm::Mode;
 use rand::{distributions::Uniform, Rng};
 
+use crate::utils::generate_random_vec;
+
 #[derive(Debug, PartialEq)]
 pub enum AESModes {
     ECB,
     CBC,
-}
-
-fn generate_random_vec(key_size: usize) -> Vec<u8> {
-    let mut rng = rand::thread_rng();
-    (0..key_size).map(|_| rng.gen::<u8>()).collect::<Vec<u8>>()
 }
 
 pub fn encryption_oracle(bytes: Vec<u8>, key_size: usize) -> (Vec<u8>, AESModes) {
