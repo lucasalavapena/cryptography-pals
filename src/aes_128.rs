@@ -43,29 +43,12 @@ pub mod ecb {
 
 pub mod cbc {
     use super::*;
-    use crate::block::{PKCS7_padding, PKCS7_padding_remove};
+    use crate::block::{pkcs7_padding, pkcs7_padding_remove};
     use crate::xor;
-    use openssl::symm::Mode;
-
-    // pub fn symmetry(bytes: &[u8], key: &[u8], iv: &[u8], block_size: usize, mode: Mode) -> Vec<u8> {
-    //     let mut encrypted_bytes = vec![];
-    //     let mut prev_block = iv.to_vec();
-
-    //     for curr_block in bytes.chunks(block_size) {
-    //         let xored_block: Vec<u8> = xor::xor_bytes2(curr_block, &prev_block);
-
-    //         let encrypted_block = aes_128_ecb(key, xored_block.as_slice(), mode).unwrap();
-    //         encrypted_bytes.extend(encrypted_block.clone());
-
-    //         let mut prev_block = encrypted_block;
-    //     }
-
-    //     encrypted_bytes
-    // }
 
     pub fn encrypt(bytes: &[u8], key: &[u8], iv: &[u8], block_size: usize) -> Vec<u8> {
         let mut encrypted_bytes = vec![];
-        let padded_bytes = PKCS7_padding(&bytes.to_vec(), block_size);
+        let padded_bytes = pkcs7_padding(bytes, block_size);
 
         let mut prev_block = iv.to_vec();
 
@@ -94,7 +77,7 @@ pub mod cbc {
         }
 
         println!("before removing trim {:?} ", decrypted_bytes);
-        PKCS7_padding_remove(&decrypted_bytes.to_vec(), block_size)
+        pkcs7_padding_remove(&decrypted_bytes.to_vec(), block_size)
     }
 }
 

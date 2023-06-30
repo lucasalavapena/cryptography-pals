@@ -1,5 +1,4 @@
 use crate::aes_128;
-use openssl::symm::Mode;
 use rand::{distributions::Uniform, Rng};
 
 use crate::utils::generate_random_vec;
@@ -12,14 +11,14 @@ pub enum AESModes {
 
 pub fn encryption_oracle(bytes: Vec<u8>, key_size: usize) -> (Vec<u8>, AESModes) {
     let aes_key = generate_random_vec(key_size);
-    let iv = generate_random_vec(key_size.clone());
+    let iv = generate_random_vec(key_size);
 
     let mut padded_bytes = vec![];
     let mut rng = rand::thread_rng();
     let padding_dist: Uniform<usize> = Uniform::new(5, 11);
 
-    let before_padding = rng.sample(&padding_dist);
-    let after_padding = rng.sample(&padding_dist);
+    let before_padding = rng.sample(padding_dist);
+    let after_padding = rng.sample(padding_dist);
 
     padded_bytes.extend(generate_random_vec(before_padding));
     padded_bytes.extend(bytes);

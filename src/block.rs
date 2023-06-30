@@ -1,6 +1,3 @@
-use itertools::Itertools;
-use std::slice::Chunks;
-
 // Tranpose blocks
 // Now transpose the blocks: make a block that is the first byte of every block,
 // and a block that is the second byte of every block, and so on.
@@ -17,20 +14,20 @@ pub fn tranpose_blocks(bytes: Vec<u8>, chunk_size: usize) -> Vec<Vec<u8>> {
         .collect()
 }
 
-pub fn PKCS7_padding(block: &Vec<u8>, block_size: usize) -> Vec<u8> {
-    let mut res = block.clone();
+pub fn pkcs7_padding(block: &[u8], block_size: usize) -> Vec<u8> {
+    let mut res = block.to_owned();
 
     let required_padding = 16 - block.len() % block_size;
     res.extend(vec![required_padding as u8; required_padding]);
 
-    return res;
+    res
 }
 
-pub fn PKCS7_padding_remove(block: &Vec<u8>, block_size: usize) -> Vec<u8> {
-    let mut res = block.clone();
+pub fn pkcs7_padding_remove(block: &[u8], block_size: usize) -> Vec<u8> {
+    let mut res = block.to_owned();
     let last_val = *block.last().unwrap();
 
-    if 0 >= last_val || last_val as usize > block_size {
+    if last_val as usize > block_size {
         return res;
     }
 
@@ -42,7 +39,7 @@ pub fn PKCS7_padding_remove(block: &Vec<u8>, block_size: usize) -> Vec<u8> {
         }
     }
 
-    return res;
+    res
 }
 
 #[cfg(test)]
@@ -51,10 +48,10 @@ mod tests {
 
     #[test]
     fn test_PKCS7_padding() {
-        let bytes: Vec<u8> = (0..16).collect();
-        let res = PKCS7_padding(&bytes, 20);
+        let bytes: Vec<u8> = (0..12).collect();
+        let res = pkcs7_padding(&bytes, 20);
 
-        let mut expected: Vec<u8> = (0..16).collect();
+        let mut expected: Vec<u8> = (0..12).collect();
         expected.extend(vec![4, 4, 4, 4]);
         assert_eq!(res.clone(), expected)
     }
@@ -62,7 +59,7 @@ mod tests {
     #[test]
     fn test_PKCS7_padding_remove() {
         let bytes: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 2, 2];
-        let res = PKCS7_padding_remove(&bytes, bytes.len());
+        let res = pkcs7_padding_remove(&bytes, bytes.len());
 
         let mut expected: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7];
         assert_eq!(res.clone(), expected)

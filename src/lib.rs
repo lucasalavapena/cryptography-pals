@@ -7,7 +7,6 @@ mod utils;
 mod xor;
 
 use itertools::Itertools;
-use std::iter::zip;
 
 #[cfg(test)]
 mod tests {
@@ -50,9 +49,9 @@ mod tests {
     #[test]
     fn challenge_02() {
         let input = "1c0111001f010100061a024b53535009181c";
-        let XORer = "686974207468652062756c6c277320657965";
+        let xorer = "686974207468652062756c6c277320657965";
         let decoded_input = hex::decode(input).unwrap();
-        let decoded_XORer = hex::decode(XORer).unwrap();
+        let decoded_XORer = hex::decode(xorer).unwrap();
         let xored_vector = xor::xor_bytes(decoded_input, decoded_XORer);
 
         let result = hex::encode(xored_vector);
@@ -177,10 +176,10 @@ mod tests {
 
     #[test]
     fn challenge_09() {
-        let mut bytes: Vec<u8> = (0..16).collect();
-        let res = block::PKCS7_padding(&mut bytes, 20);
+        let mut bytes: Vec<u8> = (0..12).collect();
+        let res = block::pkcs7_padding(&mut bytes, 20);
 
-        let mut expected: Vec<u8> = (0..16).collect();
+        let mut expected: Vec<u8> = (0..12).collect();
         expected.extend(vec![4, 4, 4, 4]);
         assert_eq!(res.clone(), expected)
     }

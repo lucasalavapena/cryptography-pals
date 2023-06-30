@@ -7,7 +7,7 @@ use crate::xor;
 //todo wasserstein distance or kl divergence?
 
 // from wikipedia
-const frequency_char: [u32; 26] = [
+const FREQUENCY_CHAR: [u32; 26] = [
     8200,  // a
     3500,  // b
     2800,  // c
@@ -42,7 +42,7 @@ fn score_based_char_freq(bytes: Vec<u8>) -> u32 {
         let c: char = byte.try_into().unwrap();
         let c_lower = c.to_lowercase().to_string().chars().next().unwrap();
 
-        if 'a' > c_lower || 'z' < c_lower {
+        if !c_lower.is_ascii_lowercase() {
             // 32 is the space character
 
             if c_lower == ' ' {
@@ -52,24 +52,24 @@ fn score_based_char_freq(bytes: Vec<u8>) -> u32 {
         }
 
         let b: u32 = c_lower.into();
-        score += frequency_char[b as usize - 97];
+        score += FREQUENCY_CHAR[b as usize - 97];
     }
     score
 }
 
-pub fn get_best_key(bytes: &Vec<u8>) -> (u32, u8) {
+pub fn get_best_key(bytes: &[u8]) -> (u32, u8) {
     (0..=255)
         .map(|c| {
             (
-                score_based_char_freq(xor::xor_bytes_single(bytes.clone(), c)),
+                score_based_char_freq(xor::xor_bytes_single(bytes.to_owned(), c)),
                 c,
             )
         })
-        .max_by_key(|(score, _)| score.clone())
+        .max_by_key(|(score, _)| *score)
         .unwrap()
 }
 
-pub fn count_repeated_blocks(bytes: &Vec<u8>, block_size: usize) -> usize {
+pub fn count_repeated_blocks(bytes: &[u8], block_size: usize) -> usize {
     let mut unique_items: HashSet<Vec<u8>> = HashSet::new();
 
     let blocks = bytes.chunks(block_size);
@@ -82,7 +82,7 @@ pub fn count_repeated_blocks(bytes: &Vec<u8>, block_size: usize) -> usize {
     total_blocks - unique_items.len()
 }
 
-// pub fn count_repeated_bytes(bytes: &Vec<u8>) -> usize {
+// pub fn count_repeated_bytes(bytes: &[u8]) -> usize {
 //     let mut unique_items: HashSet<u8> = HashSet::new();
 
 //     for b in bytes {
@@ -96,12 +96,10 @@ where
     I: IntoIterator<Item = u8>,
     J: IntoIterator<Item = u8>,
 {
-    let res = a
-        .into_iter()
+    a.into_iter()
         .zip(b.into_iter())
         .map(|(x, y)| (x ^ y).count_ones() as usize)
-        .sum();
-    res
+        .sum()
 }
 
 #[test]

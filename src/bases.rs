@@ -36,7 +36,7 @@ pub fn u24_to_base64(input: [u8; 3]) -> [char; 4] {
     let a = (input[0] & 0b111_111_00) >> 2;
     let b = (input[0] & 0b000_000_11) << 4 | (input[1] & 0b1111_0000) >> 4;
     let c = (input[1] & 0b0000_1111) << 2 | (input[2] & 0b1100_0000) >> 6;
-    let d = input[2] & 0b00_11_1111;
+    let d = input[2] & 0b0011_1111;
 
     let bytes = [a, b, c, d];
     bytes.map(|byte| u8_to_base64[&byte])
