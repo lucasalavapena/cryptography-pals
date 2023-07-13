@@ -77,7 +77,7 @@ pub fn ecb_oracle(ecb_encrypter: fn(&[u8]) -> Vec<u8>) -> Vec<u8> {
             }
         }
     }
-    pkcs7_padding_remove(&res, block_size)
+    pkcs7_padding_remove(&res, block_size).unwrap()
 }
 
 #[test]

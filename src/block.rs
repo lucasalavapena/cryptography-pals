@@ -14,6 +14,20 @@ pub fn tranpose_blocks(bytes: Vec<u8>, chunk_size: usize) -> Vec<Vec<u8>> {
         .collect()
 }
 
+
+use std::{error::Error, fmt};
+
+#[derive(Debug)]
+pub struct InvalidPKCS7Padding;
+
+impl Error for InvalidPKCS7Padding {}
+
+impl fmt::Display for InvalidPKCS7Padding {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "InvalidPKCS7Padding !!!")
+    }
+}
+
 pub fn pkcs7_padding(block: &[u8], block_size: usize) -> Vec<u8> {
     let mut res = block.to_owned();
 
@@ -23,23 +37,31 @@ pub fn pkcs7_padding(block: &[u8], block_size: usize) -> Vec<u8> {
     res
 }
 
-pub fn pkcs7_padding_remove(block: &[u8], block_size: usize) -> Vec<u8> {
+pub fn pkcs7_padding_remove(block: &[u8], block_size: usize) -> Result<Vec<u8>, InvalidPKCS7Padding> {
     let mut res = block.to_owned();
     let last_val = *block.last().unwrap();
 
     if last_val as usize > block_size {
-        return res;
+        return Ok(res);
     }
+
+    let mut cnt = 0;
 
     for i in 0..block_size {
         if *res.last().unwrap() == last_val {
             res.pop();
+            cnt += 1;
         } else {
-            return res;
+            if cnt == last_val {
+                return Ok(res);
+            }
+            else {
+                return Err(InvalidPKCS7Padding);
+            }
         }
     }
 
-    res
+    Ok(res)
 }
 
 #[cfg(test)]
@@ -59,10 +81,31 @@ mod tests {
     #[test]
     fn test_PKCS7_padding_remove() {
         let bytes: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 2, 2];
-        let res = pkcs7_padding_remove(&bytes, bytes.len());
+        let res = pkcs7_padding_remove(&bytes, 3);
 
-        let mut expected: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7];
-        assert_eq!(res.clone(), expected)
+        assert!(res.is_ok());
+
+        let expected: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7];
+        assert_eq!(res.unwrap(), expected)
+    }
+
+    #[test]
+    fn test_PKCS7_padding_remove2() {
+        let bytes: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 4, 4];
+        let res = pkcs7_padding_remove(&bytes, 3);
+
+        assert!(res.is_err());
+
+    }
+
+    #[test]
+    fn test_PKCS7_padding_remove3() {
+        let bytes: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 19, 23];
+        let res = pkcs7_padding_remove(&bytes, 3);
+
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), bytes)
+
     }
 
     #[test]

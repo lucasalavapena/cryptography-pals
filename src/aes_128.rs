@@ -77,7 +77,7 @@ pub mod cbc {
         }
 
         println!("before removing trim {:?} ", decrypted_bytes);
-        pkcs7_padding_remove(&decrypted_bytes.to_vec(), block_size)
+        pkcs7_padding_remove(&decrypted_bytes.to_vec(), block_size).unwrap()
     }
 }
 
