@@ -1,6 +1,7 @@
 use std::cmp;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::iter::zip;
+use itertools::Itertools;
 
 use crate::xor;
 
@@ -82,6 +83,70 @@ pub fn count_repeated_blocks(bytes: &[u8], block_size: usize) -> usize {
     total_blocks - unique_items.len()
 }
 
+// pub fn repeated_blocks_idxs(bytes: &[u8], block_size: usize) -> Vec<usize> {
+//     // bytes.windows(block_size)
+//     // .enumerate()
+//     // .group_by(|(_, chunk)| *chunk)
+//     // .into_iter()
+//     // .filter_map(|(thing, group)| {
+//     //     let cnt = group.clone().count();
+//     //     println!("thing={thing:?}");
+//     //     let res = group.into_iter().map(|(i, _)| i).collect::<Vec<usize>>();
+
+//     //     if res.len() > 1 {
+//     //         Some(res)
+//     //     } else {
+//     //         None
+//     //     }
+//     //     // None
+//     // })
+//     // .flatten()
+//     // .collect()
+//     let mut unique_items: HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
+
+//     let blocks = bytes.chunks(block_size);
+//     let total_blocks = blocks.len();
+
+//     for (i, b) in blocks.enumerate() {
+//         let value = b.to_vec();
+//         if !unique_items.contains(value) {
+//             unique_items.insert((value, i));
+//         }
+//         else {
+
+//             repeated_idx
+//         }
+//     }
+// }
+
+pub fn find_repeated_chunk_indexes(
+    data: &[u8],
+    chunk_len: usize,
+) -> Vec<usize> {
+    let mut chunk_map: HashMap<&[u8], HashSet<usize>> = HashMap::new();
+    
+    for (i, chunk) in data.chunks(chunk_len).enumerate() {
+        let entry = chunk_map.entry(chunk).or_insert_with(HashSet::new);
+        entry.insert(i);
+    }
+    
+    let repeated_chunks: Vec<&HashSet<usize>> = chunk_map
+        .values()
+        .filter(|indexes| indexes.len() > 1)
+        .collect();
+    
+    let mut indexes: Vec<usize> = repeated_chunks
+        .iter()
+        .flat_map(|indexes| indexes.iter())
+        .cloned()
+        .collect();
+
+    indexes.sort();
+
+    indexes
+}
+
+
 // pub fn count_repeated_bytes(bytes: &[u8]) -> usize {
 //     let mut unique_items: HashSet<u8> = HashSet::new();
 
@@ -131,3 +196,15 @@ fn test_score_based_char_freq() {
     let expected = 52000;
     assert_eq!(result, expected);
 }
+
+
+#[test]
+fn test_repeated_blocks_idxs() {
+    let bytes: Vec<u8> = vec![32, 32, 15, 15, 19, 15, 32, 32, 15, 32, 32, 15];
+    let result = find_repeated_chunk_indexes(&bytes, 3);
+    println!("result={result:?}");
+    // let expected = vec![];
+    // assert_eq!(result, expected);
+}
+
+// repeated_blocks_idxs(bytes: &[u8], block_size: usize)
