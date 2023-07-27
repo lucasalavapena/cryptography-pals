@@ -25,11 +25,11 @@ pub mod ecb {
     }
     pub fn encrypt(
         key: &[u8],
-        ciphertext: &[u8],
+        plaintext: &[u8],
         iv: Option<&[u8]>,
         pad: bool,
     ) -> Result<Vec<u8>, ErrorStack> {
-        ecb_helper(key, ciphertext, Mode::Encrypt, iv, pad)
+        ecb_helper(key, plaintext, Mode::Encrypt, iv, pad)
     }
     pub fn decrypt(
         key: &[u8],
@@ -81,8 +81,65 @@ pub mod cbc {
     }
 }
 
+pub mod ctr {
+    use openssl::error::ErrorStack;
+
+    use super::*;
+    use crate::xor;
+
+    fn helper(plaintext: &[u8], key: &[u8], nonce: u64) -> Result<Vec<u8>, ErrorStack>  {
+        let mut res: Vec<u8> = vec![];
+        let nonce_array: [u8; 8] = nonce.to_le_bytes();
+
+        let mut counter = 0u64;
+        let mut counter_array: [u8; 8] = counter.to_le_bytes();
+
+        let mut keystream: [u8; 16] = [0; 16];
+
+        for (i, e) in nonce_array.iter().enumerate() {
+            keystream[i] = *e;
+        }
+
+        for plaintext_section in plaintext.chunks(16) {
+
+            // if plaintext_section.len() != 16 {break;}
+            let keystream_salt = super::ecb::encrypt(key, keystream.as_slice(), None, false)?;
+            let chipertext_block: Vec<u8> = xor::xor_bytes2(plaintext_section, keystream_salt);
+            res.extend(chipertext_block);
+
+            // update count
+            counter += 1;
+            counter_array = counter.to_le_bytes();
+
+            for (i, e) in counter_array.iter().enumerate() {
+                keystream[i + 8] = *e;
+            }
+            println!("keystream={keystream:?}");
+
+        }
+
+        Ok(res)
+    }
+
+    pub fn encrypt(plaintext: &[u8], key: &[u8], nonce: Option<u64>) -> Result<Vec<u8>, ErrorStack> {
+        helper(plaintext, key, nonce.unwrap_or(0u64))
+    }
+    pub fn decrypt(
+        ciphertext: &[u8],
+        key: &[u8],
+        nonce: Option<u64>,
+    ) -> Result<Vec<u8>, ErrorStack> {
+        helper(ciphertext, key, nonce.unwrap_or(0u64))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
+    use base64::{
+        engine::{self, general_purpose},
+        Engine as _,
+    };
     use super::*;
 
     // fn aes_128_ecb_test() {
@@ -132,5 +189,51 @@ mod tests {
         let decrypted_bytes = cbc::decrypt(encrypted_bytes.as_slice(), key, iv, 16);
 
         assert_eq!(decrypted_bytes, bytes.as_slice());
+    }
+
+    #[test]
+    fn aes_128_ctr_example() {
+        let encrypted_bytes =
+        general_purpose::STANDARD.decode("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==").unwrap();
+            
+        let key = b"YELLOW SUBMARINE";
+        let nonce = 0;
+        // let format = 64;
+
+        let decrypted_bytes = ctr::decrypt(&encrypted_bytes, key, Some(nonce));
+        let res: Vec<u8> = decrypted_bytes.unwrap();
+        // let res = decrypted_bytes.unwrap();
+
+        println!("res={:?} {}", res, res.len());
+
+        let message = std::str::from_utf8(&res).unwrap();
+        println!("{}", message);
+
+        // assert_eq!(decrypted_bytes, bytes.as_slice());
+    }
+
+
+    #[test]
+    fn aes_128_ctr_32_bytes() {
+        let bytes =
+            b"There once was a boy named Harry";
+        let key = b"YELLOW SUBMARINE";
+        let nonce: Option<u64> = Some(4343u64);
+
+        let encrypted_bytes = ctr::encrypt(bytes, key, nonce).unwrap();
+        let decrypted_bytes = ctr::decrypt(&encrypted_bytes, key, nonce).unwrap();
+        assert_eq!(decrypted_bytes, bytes)
+    }
+
+    #[test]
+    fn aes_128_ctr_56_bytes() {
+        let bytes =
+            b"There once was a boy named Harry. Destined to be a star.";
+        let key = b"YELLOW SUBMARINE";
+        let nonce: Option<u64> = Some(4343u64);
+
+        let encrypted_bytes = ctr::encrypt(bytes, key, nonce).unwrap();
+        let decrypted_bytes = ctr::decrypt(&encrypted_bytes, key, nonce).unwrap();
+        assert_eq!(decrypted_bytes, bytes)
     }
 }

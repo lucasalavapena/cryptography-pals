@@ -1,7 +1,7 @@
-use std::cmp;
-use std::collections::{HashSet, HashMap};
-use std::iter::zip;
 use itertools::Itertools;
+use std::cmp;
+use std::collections::{HashMap, HashSet};
+use std::iter::zip;
 
 use crate::xor;
 
@@ -119,22 +119,19 @@ pub fn count_repeated_blocks(bytes: &[u8], block_size: usize) -> usize {
 //     }
 // }
 
-pub fn find_repeated_chunk_indexes(
-    data: &[u8],
-    chunk_len: usize,
-) -> Vec<usize> {
+pub fn find_repeated_chunk_indexes(data: &[u8], chunk_len: usize) -> Vec<usize> {
     let mut chunk_map: HashMap<&[u8], HashSet<usize>> = HashMap::new();
-    
+
     for (i, chunk) in data.chunks(chunk_len).enumerate() {
         let entry = chunk_map.entry(chunk).or_insert_with(HashSet::new);
         entry.insert(i);
     }
-    
+
     let repeated_chunks: Vec<&HashSet<usize>> = chunk_map
         .values()
         .filter(|indexes| indexes.len() > 1)
         .collect();
-    
+
     let mut indexes: Vec<usize> = repeated_chunks
         .iter()
         .flat_map(|indexes| indexes.iter())
@@ -145,7 +142,6 @@ pub fn find_repeated_chunk_indexes(
 
     indexes
 }
-
 
 // pub fn count_repeated_bytes(bytes: &[u8]) -> usize {
 //     let mut unique_items: HashSet<u8> = HashSet::new();
@@ -196,7 +192,6 @@ fn test_score_based_char_freq() {
     let expected = 52000;
     assert_eq!(result, expected);
 }
-
 
 #[test]
 fn test_repeated_blocks_idxs() {

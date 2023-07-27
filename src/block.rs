@@ -14,7 +14,6 @@ pub fn tranpose_blocks(bytes: Vec<u8>, chunk_size: usize) -> Vec<Vec<u8>> {
         .collect()
 }
 
-
 use std::{error::Error, fmt};
 
 #[derive(Debug)]
@@ -37,7 +36,10 @@ pub fn pkcs7_padding(block: &[u8], block_size: usize) -> Vec<u8> {
     res
 }
 
-pub fn pkcs7_padding_remove(block: &[u8], block_size: usize) -> Result<Vec<u8>, InvalidPKCS7Padding> {
+pub fn pkcs7_padding_remove(
+    block: &[u8],
+    block_size: usize,
+) -> Result<Vec<u8>, InvalidPKCS7Padding> {
     let mut res = block.to_owned();
     let last_val = *block.last().unwrap();
 
@@ -54,8 +56,7 @@ pub fn pkcs7_padding_remove(block: &[u8], block_size: usize) -> Result<Vec<u8>, 
         } else {
             if cnt == last_val {
                 return Ok(res);
-            }
-            else {
+            } else {
                 return Err(InvalidPKCS7Padding);
             }
         }
@@ -95,7 +96,6 @@ mod tests {
         let res = pkcs7_padding_remove(&bytes, 3);
 
         assert!(res.is_err());
-
     }
 
     #[test]
@@ -105,7 +105,6 @@ mod tests {
 
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), bytes)
-
     }
 
     #[test]

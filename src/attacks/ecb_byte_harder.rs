@@ -1,6 +1,6 @@
-use crate::{aes_128, block};
 use crate::block::pkcs7_padding_remove;
 use crate::metrics::find_repeated_chunk_indexes;
+use crate::{aes_128, block};
 
 use base64::{engine::general_purpose, Engine as _};
 use itertools::Itertools;
@@ -12,7 +12,7 @@ use crate::utils::{generate_rand_vec_rand_size, generate_random_vec};
 
 // AES-128-ECB(random-prefix || attacker-controlled || target-bytes, random-key)
 
-pub fn ecb_input(attacker_input: &[u8], random_prefix:  &[u8]) -> Vec<u8> {
+pub fn ecb_input(attacker_input: &[u8], random_prefix: &[u8]) -> Vec<u8> {
     // let random_prefix = generate_rand_vec_rand_size(5, 50);
     let target_bytes = general_purpose::STANDARD.decode("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK").unwrap();
 
@@ -41,7 +41,7 @@ pub fn ecb_oracle(ecb_encrypter: fn(&[u8], &[u8]) -> Vec<u8>) -> Vec<u8> {
 
     // get prefix_size
     // 2 * might be enough but this should also work
-    input.extend(vec![b'A'; 4  * block_size]);
+    input.extend(vec![b'A'; 4 * block_size]);
 
     let prefix_size_experiment_og = ecb_encrypter(&input, &random_prefix);
     let no_repeated_block_og = find_repeated_chunk_indexes(&prefix_size_experiment_og, block_size);
@@ -62,9 +62,7 @@ pub fn ecb_oracle(ecb_encrypter: fn(&[u8], &[u8]) -> Vec<u8>) -> Vec<u8> {
     // get repeated blocks and idx
     let prefix_remaining = block_size * num_blocks_offset - prefix_size;
 
-
-
-    println!("block_size: {block_size}");
+    // println!("block_size: {block_size}");
     // let mut : Option<Vec<u8>> = None;
     let mut res: Vec<u8> = vec![];
     let num_blocks = current_size / block_size;
@@ -79,7 +77,7 @@ pub fn ecb_oracle(ecb_encrypter: fn(&[u8], &[u8]) -> Vec<u8>) -> Vec<u8> {
             // whether it has the aritfical 65s in front of it other additional padding.
             let reference_block: Vec<u8> = ecb_encrypter(&reference_input, &random_prefix)
                 .iter()
-                .skip( (k + num_blocks_offset)  * block_size)
+                .skip((k + num_blocks_offset) * block_size)
                 .take(block_size)
                 .cloned()
                 .collect();
@@ -89,19 +87,21 @@ pub fn ecb_oracle(ecb_encrypter: fn(&[u8], &[u8]) -> Vec<u8>) -> Vec<u8> {
             // probably is a nicer way to do this
             if k > 0 {
                 // deal with prefix padding
-                relevant_block_input.extend(vec![b'A';  prefix_remaining]);
+                relevant_block_input.extend(vec![b'A'; prefix_remaining]);
                 relevant_block_input.extend(res[res.len() - block_size + 1..].to_vec());
-
-            }
-            else {
-                relevant_block_input = reference_input.iter().cloned().chain(res.iter().cloned()).collect();
+            } else {
+                relevant_block_input = reference_input
+                    .iter()
+                    .cloned()
+                    .chain(res.iter().cloned())
+                    .collect();
             }
 
             for j in 0..=255 {
                 relevant_block_input.push(j);
 
                 let cipher_text = ecb_encrypter(&relevant_block_input, &random_prefix);
-                
+
                 let candidate_block: Vec<u8> = cipher_text
                     .iter()
                     .skip(num_blocks_offset * block_size)
@@ -115,7 +115,6 @@ pub fn ecb_oracle(ecb_encrypter: fn(&[u8], &[u8]) -> Vec<u8>) -> Vec<u8> {
                 relevant_block_input.pop();
             }
         }
-
     }
     pkcs7_padding_remove(&res, block_size).unwrap()
 }
@@ -123,11 +122,11 @@ pub fn ecb_oracle(ecb_encrypter: fn(&[u8], &[u8]) -> Vec<u8>) -> Vec<u8> {
 #[test]
 fn challenge_14() {
     let res = ecb_oracle(ecb_input);
-    println!("res={res:?}");
-    let decoded_message = std::str::from_utf8(&res).unwrap();
-    println!("decoded_message: {}", decoded_message);
+    // println!("res={res:?}");
+    // let decoded_message = std::str::from_utf8(&res).unwrap();
+    // println!("decoded_message: {}", decoded_message);
 
-    // let expected = general_purpose::STANDARD.decode("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK").unwrap();
+    let expected = general_purpose::STANDARD.decode("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK").unwrap();
 
-    // assert_eq!(res, expected)
+    assert_eq!(res, expected)
 }
