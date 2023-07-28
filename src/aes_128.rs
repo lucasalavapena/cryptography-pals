@@ -87,7 +87,7 @@ pub mod ctr {
     use super::*;
     use crate::xor;
 
-    fn helper(plaintext: &[u8], key: &[u8], nonce: u64) -> Result<Vec<u8>, ErrorStack>  {
+    fn helper(plaintext: &[u8], key: &[u8], nonce: u64) -> Result<Vec<u8>, ErrorStack> {
         let mut res: Vec<u8> = vec![];
         let nonce_array: [u8; 8] = nonce.to_le_bytes();
 
@@ -101,7 +101,6 @@ pub mod ctr {
         }
 
         for plaintext_section in plaintext.chunks(16) {
-
             // if plaintext_section.len() != 16 {break;}
             let keystream_salt = super::ecb::encrypt(key, keystream.as_slice(), None, false)?;
             let chipertext_block: Vec<u8> = xor::xor_bytes2(plaintext_section, keystream_salt);
@@ -115,13 +114,16 @@ pub mod ctr {
                 keystream[i + 8] = *e;
             }
             println!("keystream={keystream:?}");
-
         }
 
         Ok(res)
     }
 
-    pub fn encrypt(plaintext: &[u8], key: &[u8], nonce: Option<u64>) -> Result<Vec<u8>, ErrorStack> {
+    pub fn encrypt(
+        plaintext: &[u8],
+        key: &[u8],
+        nonce: Option<u64>,
+    ) -> Result<Vec<u8>, ErrorStack> {
         helper(plaintext, key, nonce.unwrap_or(0u64))
     }
     pub fn decrypt(
@@ -136,11 +138,11 @@ pub mod ctr {
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     use base64::{
         engine::{self, general_purpose},
         Engine as _,
     };
-    use super::*;
 
     // fn aes_128_ecb_test() {
     //     let aes_key = b"YELLOW SUBMARINE";
@@ -193,9 +195,10 @@ mod tests {
 
     #[test]
     fn aes_128_ctr_example() {
-        let encrypted_bytes =
-        general_purpose::STANDARD.decode("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==").unwrap();
-            
+        let encrypted_bytes = general_purpose::STANDARD
+            .decode("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==")
+            .unwrap();
+
         let key = b"YELLOW SUBMARINE";
         let nonce = 0;
         // let format = 64;
@@ -212,11 +215,9 @@ mod tests {
         // assert_eq!(decrypted_bytes, bytes.as_slice());
     }
 
-
     #[test]
     fn aes_128_ctr_32_bytes() {
-        let bytes =
-            b"There once was a boy named Harry";
+        let bytes = b"There once was a boy named Harry";
         let key = b"YELLOW SUBMARINE";
         let nonce: Option<u64> = Some(4343u64);
 
@@ -227,8 +228,7 @@ mod tests {
 
     #[test]
     fn aes_128_ctr_56_bytes() {
-        let bytes =
-            b"There once was a boy named Harry. Destined to be a star.";
+        let bytes = b"There once was a boy named Harry. Destined to be a star.";
         let key = b"YELLOW SUBMARINE";
         let nonce: Option<u64> = Some(4343u64);
 

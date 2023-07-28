@@ -1,8 +1,6 @@
 use crate::aes_128;
 use rand::{distributions::Uniform, Rng};
 
-
-
 use crate::utils::generate_random_vec;
 
 #[derive(Debug, PartialEq)]

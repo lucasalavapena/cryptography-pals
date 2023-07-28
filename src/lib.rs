@@ -3,6 +3,7 @@ mod attacks;
 mod bases;
 mod block;
 mod metrics;
+mod rng;
 mod utils;
 mod xor;
 
